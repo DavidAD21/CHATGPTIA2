@@ -1,0 +1,6 @@
+google-generative-ai
+PyPDF2
+python-dotenv
+streamlit
+requests
+beautifulsoup4
