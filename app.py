@@ -10,7 +10,7 @@ from bs4 import BeautifulSoup
 
 # Configurar la página de Streamlit
 st.set_page_config(
-    page_title="Gemini-Pro Chatbot by HJP7",
+    page_title="Gemini-Pro Chatbot",
     page_icon=":alien:",
     layout="centered",
 )
@@ -57,10 +57,10 @@ def extract_text_from_url(url):
 # Barra lateral para cargar archivo PDF
 st.sidebar.title("Gemini-Pro Configuration")
 pdf_path = st.sidebar.file_uploader("Upload a PDF file", type="pdf")
-
+button_pdf=st.sidebar.button('pregunta pdf')
 # Barra lateral para ingresar enlace
 url = st.sidebar.text_input("Enter URL:")
-
+button_url=st.sidebar.button('pregunta url')
 # Comprobar si se ha cargado un archivo PDF
 if pdf_path is not None:
     file_contents = pdf_path.getvalue()
@@ -82,38 +82,50 @@ st.markdown(
 
 # Sección para preguntas
 col1.markdown("Preguntas sobre el PDF o cualquier otro tema")
+question= None  
 question = col1.text_input("Tu: ")
-resu= contado_de_token(question)
-st.sidebar.markdown(f'Resultado de tokens en la pregunta:  \n {resu}')
+
+if question !='':
+    resu= contado_de_token(question)
+    st.sidebar.markdown(f'Resultado de tokens en la pregunta:  \n {resu}')
 # Botón para enviar preguntas
 response=None
-if st.button("Enviar pregunta"):
+if button_pdf:
     try:
         if pdf_text and question.strip():
             response = chat.send_message(instruction + pdf_text + question)
             conversation_history.append(("Tú", question))
             conversation_history.append(("Bot", response.text))
-        elif question.strip():
-            response = chat.send_message(instruction + question)
-            conversation_history.append(("Tú", question))
-            conversation_history.append(("Bot", response.text))
+        else:
+            st.error("No se pudo extraer texto de la URL. Por favor, inténtelo de nuevo con otro enlace.")
     except genai.types.generation_types.StopCandidateException:
         st.error("El modelo detuvo la generación de la respuesta. Inténtalo de nuevo con otra pregunta.")
 
 # Verificar si se proporciona un enlace y extraer texto si está presente
-if url.strip():
+elif button_url:
     url_text = extract_text_from_url(url)
     if url_text:
         response = chat.send_message(instruction + url_text + question)
         conversation_history.append(("You", "URL provided"))
         conversation_history.append(("Bot", response.text))
     else:
-        st.error("Couldn't extract text from the URL. Please try again with another link.")
+        st.error("No se pudo extraer texto de la URL. Por favor, inténtelo de nuevo con otro enlace.")
+
+if question.strip():
+            response = chat.send_message(instruction + question)
+            conversation_history.append(("Tú", question))
+            conversation_history.append(("Bot", response.text))
+
 for sender, message in conversation_history:
+
     if sender == "Tú":
-        col1.markdown(f"{sender}: {message}")
+        st.empty()
+        st.write(f"{sender}: {message}")
+        st.empty()
     elif sender == "Bot":
-        col1.markdown(f"{sender}: {message}", unsafe_allow_html=True)
+        st.empty()
+        st.write(f"{sender}: {message}")
+
     
 if response is not None:
     resul= contado_de_token(response.text)
