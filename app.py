@@ -18,6 +18,7 @@ st.set_page_config(
 # Cargar variables de entorno
 load_dotenv()
 API_KEY = os.getenv('GEMINI_API_KEY')
+st.title("Preguntas sobre el PDF o cualquier otro tema")
 
 def contado_de_token(pregunta):
     if pregunta:  
@@ -33,6 +34,13 @@ chat = model.start_chat(history=[])
 instruction = "responde de manera inteligente en español"
 pdf_text = ""
 conversation_history = []
+
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+    
+# for message in st.session_state.messages:
+#     with st.chat_message(message["role"]):
+#         st.markdown(message["content"])
 
 # Función para extraer texto de un archivo PDF
 def extract_text_from_pdf(file_contents):
@@ -67,7 +75,7 @@ if pdf_path is not None:
     pdf_text = extract_text_from_pdf(io.BytesIO(file_contents))
 
 # Elementos de la interfaz de Streamlit
-col1, col2 = st.columns([2, 1])
+col1, col2,col3 = st.columns([3, 2, 1])
 st.markdown(
     """
     <style>
@@ -79,58 +87,66 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-
-# Sección para preguntas
-col1.markdown("Preguntas sobre el PDF o cualquier otro tema")
-question= None  
-question = col1.text_input("Tu: ")
-
-if question !='':
-    resu= contado_de_token(question)
-    st.sidebar.markdown(f'Resultado de tokens en la pregunta:  \n {resu}')
-# Botón para enviar preguntas
 response=None
+question=None
+# Sección para preguntas
+question = st.text_input("Pregunta")
+
+resu= contado_de_token(question)
+st.sidebar.markdown(f'Resultado de tokens en la pregunta:  \n {resu}')
 
 if button_pdf:
     try:
         if pdf_text:
-            response = chat.send_message(instruction + pdf_text + question)
-            conversation_history.append(("Tú", question))
-            conversation_history.append(("Bot", response.text))
+            # Verificar si la variable 'question' no es None antes de usarla
+            if question is not None:
+                response = chat.send_message(instruction + pdf_text + question)
+                conversation_history.append(("Tú", question))
+                conversation_history.append(("Bot", response.text))
+            else:
+                st.error("Por favor ingresa una pregunta válida")
         else:
-            st.error("No se pudo extraer texto de la URL. Por favor, inténtelo de nuevo con otro enlace.")
+            st.error("No se encontró información sobre esa pregunta en el PDF. Por favor, inténtelo de nuevo")
     except genai.types.generation_types.StopCandidateException:
         st.error("El modelo detuvo la generación de la respuesta. Inténtalo de nuevo con otra pregunta.")
 
-# Verificar si se proporciona un enlace y extraer texto si está presente
 elif button_url:
     url_text = extract_text_from_url(url)
     if url_text:
-        response = chat.send_message(instruction + url_text + question)
-        conversation_history.append(("You", question))
-        conversation_history.append(("Bot", response.text))
-    else:
-        st.error("No se pudo extraer texto de la URL. Por favor, inténtelo de nuevo con otro enlace.")
-
-elif question.strip():
-            response = chat.send_message(instruction + question)
+        # Verificar si la variable 'question' no es None antes de usarla
+        if question is not None :
+            response = chat.send_message(instruction + url_text + question)
             conversation_history.append(("Tú", question))
             conversation_history.append(("Bot", response.text))
+        else:
+            st.error("Por favor ingresa una pregunta válida")
+    else:
+        st.error("No se encontró información sobre esa pregunta en la URL. Por favor, inténtelo de nuevo")
+
+elif question is not None and question.strip():
+    response = chat.send_message(instruction + question)
+    conversation_history.append(("Tú", question))
+    conversation_history.append(("Bot", response.text))
+else:
+    st.write("Por favor ingresa una pregunta válida")
 
 
 for sender, message in conversation_history:
-
     if sender == "Tú":
         st.empty()
-        st.write(f"{sender}: {message}")
+        with st.chat_message("user"):
+            st.markdown(f"{sender}: {message}")
+            st.session_state.messages.append({"role": "user", "content": message})
+
         st.empty()
     elif sender == "Bot":
         st.empty()
-        st.write(f"{sender}: {message}")
+        with st.chat_message(name="assistant"):
+            st.markdown(f"{sender}: {message}")
+            
+            st.session_state.messages.append({"role": "assistant", "content": message})
 
-    
+
 if response is not None:
     resul= contado_de_token(response.text)
     st.sidebar.markdown(f'Resultado de tokens en la respueta  \n {resul}')
-else:
-    col1.markdown('No hay datos')
