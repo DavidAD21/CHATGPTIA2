@@ -10,8 +10,8 @@ from bs4 import BeautifulSoup
 
 # Configurar la página de Streamlit
 st.set_page_config(
-    page_title="Gemini-Pro Chatbot",
-    page_icon=":alien:",
+    page_title="DragonNightBot",
+    page_icon=":🐉",
     layout="centered",
 )
 
@@ -34,7 +34,7 @@ instruction = "responde de manera inteligente en español"
 pdf_text = ""
 conversation_history = []
 
-# Función para extraer texto de un archivo PDF
+# Función para extraer texto de un archivo PDF          
 def extract_text_from_pdf(file_contents):
     text = ""
     reader = PdfReader(file_contents)
@@ -55,11 +55,12 @@ def extract_text_from_url(url):
         return ""
 
 # Barra lateral para cargar archivo PDF
-st.sidebar.title("Gemini-Pro Configuration")
-pdf_path = st.sidebar.file_uploader("Upload a PDF file", type="pdf")
+st.sidebar.image("dragon2.png", use_column_width=True)
+st.sidebar.title("DragonNightBot")
+pdf_path = st.sidebar.file_uploader("Ingresa el Pdf", type="pdf")
 button_pdf=st.sidebar.button('pregunta pdf')
 # Barra lateral para ingresar enlace
-url = st.sidebar.text_input("Enter URL:")
+url = st.sidebar.text_input("Ingrese el enlace:")
 button_url=st.sidebar.button('pregunta url')
 # Comprobar si se ha cargado un archivo PDF
 if pdf_path is not None:
@@ -81,15 +82,16 @@ st.markdown(
 )
 
 # Sección para preguntas
-col1.markdown("Preguntas sobre el PDF o cualquier otro tema")
+col1.markdown("DragonNightBot Haz tus preguntas")
 question= None  
 question = col1.text_input("Tu: ")
 
 if question !='':
     resu= contado_de_token(question)
     st.sidebar.markdown(f'Resultado de tokens en la pregunta:  \n {resu}')
+
 # Botón para enviar preguntas
-response=None
+response = None
 if button_pdf:
     try:
         if pdf_text and question.strip():
@@ -111,10 +113,11 @@ elif button_url:
     else:
         st.error("No se pudo extraer texto de la URL. Por favor, inténtelo de nuevo con otro enlace.")
 
-if question.strip():
-            response = chat.send_message(instruction + question)
-            conversation_history.append(("Tú", question))
-            conversation_history.append(("Bot", response.text))
+
+if question.strip() and not (button_pdf or button_url):
+    response = chat.send_message(instruction + question)
+    conversation_history.append(("Tú", question))
+    conversation_history.append(("Bot", response.text))
 
 for sender, message in conversation_history:
 
@@ -124,7 +127,7 @@ for sender, message in conversation_history:
         st.empty()
     elif sender == "Bot":
         st.empty()
-        st.write(f"{sender}: {message}")
+        st.write("🐉:", message)
 
     
 if response is not None:
