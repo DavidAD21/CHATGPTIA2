@@ -13,11 +13,13 @@ st.set_page_config(
     page_title="DragonNightBot",
     page_icon=":🐉",
     layout="centered",
+
 )
 
 # Cargar variables de entorno
 load_dotenv()
 API_KEY = os.getenv('GEMINI_API_KEY')
+st.title("Preguntas sobre PDF  O URL")
 
 def contado_de_token(pregunta):
     if pregunta:  
@@ -32,9 +34,15 @@ model = genai.GenerativeModel('gemini-pro')
 chat = model.start_chat(history=[])
 instruction = "responde de manera inteligente en español"
 pdf_text = ""
-conversation_history = []
 
-# Función para extraer texto de un archivo PDF          
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+    
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
+
+# Función para extraer texto de un archivo PDF
 def extract_text_from_pdf(file_contents):
     text = ""
     reader = PdfReader(file_contents)
@@ -55,12 +63,12 @@ def extract_text_from_url(url):
         return ""
 
 # Barra lateral para cargar archivo PDF
-st.sidebar.image("dragon2.png", use_column_width=True)
 st.sidebar.title("DragonNightBot")
-pdf_path = st.sidebar.file_uploader("Ingresa el Pdf", type="pdf")
+st.sidebar.image("dragon2.png", use_column_width=True)
+pdf_path = st.sidebar.file_uploader("Upload a PDF file", type="pdf")
 button_pdf=st.sidebar.button('pregunta pdf')
 # Barra lateral para ingresar enlace
-url = st.sidebar.text_input("Ingrese el enlace:")
+url = st.sidebar.text_input("Enter URL:")
 button_url=st.sidebar.button('pregunta url')
 # Comprobar si se ha cargado un archivo PDF
 if pdf_path is not None:
@@ -68,7 +76,7 @@ if pdf_path is not None:
     pdf_text = extract_text_from_pdf(io.BytesIO(file_contents))
 
 # Elementos de la interfaz de Streamlit
-col1, col2 = st.columns([2, 1])
+col1, col2,col3 = st.columns([3, 2, 1])
 st.markdown(
     """
     <style>
@@ -80,58 +88,62 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-
+response=None
+question =None
 # Sección para preguntas
-col1.markdown("DragonNightBot Haz tus preguntas")
-question= None  
-question = col1.text_input("Tu: ")
+#question = st.text_input("Pregunta")
+question= st.text_input("Pregunta" )
 
-if question !='':
-    resu= contado_de_token(question)
-    st.sidebar.markdown(f'Resultado de tokens en la pregunta:  \n {resu}')
+if  button_pdf:
+    try:    
+        if pdf_text:
+            response = chat.send_message(instruction + pdf_text +question)
+            st.chat_message("user").markdown(question)
+            st.session_state.messages.append({"role": "user", "content": question})
 
-# Botón para enviar preguntas
-response = None
-if button_pdf:
-    try:
-        if pdf_text and question.strip():
-            response = chat.send_message(instruction + pdf_text + question)
-            conversation_history.append(("Tú", question))
-            conversation_history.append(("Bot", response.text))
+            with st.chat_message("assistant"):
+                st.markdown(response.text)
+            st.session_state.messages.append({"role": "assistant", "content": response.text})
+            question=""
+
         else:
-            st.error("No se pudo extraer texto de la URL. Por favor, inténtelo de nuevo con otro enlace.")
+            st.error("No se pudo encontro infomacion sobre la pregunta en el PDF. Por favor, inténtelo de nuevo.")
     except genai.types.generation_types.StopCandidateException:
         st.error("El modelo detuvo la generación de la respuesta. Inténtalo de nuevo con otra pregunta.")
 
 # Verificar si se proporciona un enlace y extraer texto si está presente
 elif button_url:
     url_text = extract_text_from_url(url)
-    if url_text:
-        response = chat.send_message(instruction + url_text + question)
-        conversation_history.append(("You", "URL provided"))
-        conversation_history.append(("Bot", response.text))
-    else:
-        st.error("No se pudo extraer texto de la URL. Por favor, inténtelo de nuevo con otro enlace.")
+    try:
+        if url_text:
+            response = chat.send_message(instruction + url_text + question)
 
+            st.chat_message("user").markdown(question)
+            st.session_state.messages.append({"role": "user", "content": question})
 
-if question.strip() and not (button_pdf or button_url):
+            with st.chat_message("assistant"):
+                st.markdown(response.text)
+            st.session_state.messages.append({"role": "assistant", "content": response.text})
+            question=""
+        else:
+            st.error("No se pudo encontro infomacion sobre la pregunta el URL Por favor, inténtelo de nuevo.")
+    except genai.types.generation_types.StopCandidateException:
+        st.error("El modelo detuvo la generación de la respuesta. Inténtalo de nuevo con otra pregunta.")
+
+elif question.strip():
+
     response = chat.send_message(instruction + question)
-    conversation_history.append(("Tú", question))
-    conversation_history.append(("Bot", response.text))
 
-for sender, message in conversation_history:
+    st.chat_message("user").markdown(question)
+    st.session_state.messages.append({"role": "user", "content": question})
 
-    if sender == "Tú":
-        st.empty()
-        st.write(f"{sender}: {message}")
-        st.empty()
-    elif sender == "Bot":
-        st.empty()
-        st.write("🐉:", message)
-
-    
-if response is not None:
-    resul= contado_de_token(response.text)
-    st.sidebar.markdown(f'Resultado de tokens en la respueta  \n {resul}')
+    with st.chat_message("assistant"):
+        st.markdown(response.text)
+    st.session_state.messages.append({"role": "assistant", "content": response.text})
+    question=""
 else:
-    col1.markdown('No hay datos')
+    st.write("Por favor ingresa una pregunta válida")
+
+if response:
+    resul= contado_de_token(response.text)
+    st.sidebar.markdown(f'Resultado de tokens en la respueta  \n {resul}')
