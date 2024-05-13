@@ -10,9 +10,10 @@ from bs4 import BeautifulSoup
 
 # Configurar la página de Streamlit
 st.set_page_config(
-    page_title="Gemini-Pro Chatbot",
-    page_icon=":alien:",
+    page_title="DragonNightBot",
+    page_icon=":🐉",
     layout="centered",
+
 )
 
 # Cargar variables de entorno
@@ -62,7 +63,8 @@ def extract_text_from_url(url):
         return ""
 
 # Barra lateral para cargar archivo PDF
-st.sidebar.title("Gemini-Pro Configuration")
+st.sidebar.title("DragonNightBot")
+st.sidebar.image("dragon2.png", use_column_width=True)
 pdf_path = st.sidebar.file_uploader("Upload a PDF file", type="pdf")
 button_pdf=st.sidebar.button('pregunta pdf')
 # Barra lateral para ingresar enlace
@@ -90,7 +92,7 @@ response=None
 question =None
 # Sección para preguntas
 #question = st.text_input("Pregunta")
-question= st.text_input("What is up?" )
+question= st.text_input("Pregunta" )
 
 if  button_pdf:
     try:    
