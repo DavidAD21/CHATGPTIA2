@@ -93,7 +93,9 @@ question =None
 # Sección para preguntas
 #question = st.text_input("Pregunta")
 question= st.text_input("Pregunta" )
-
+if question != '':
+    res=contado_de_token(question)
+    st.markdown(res) 
 if  button_pdf:
     try:    
         if pdf_text:
