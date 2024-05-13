@@ -90,9 +90,10 @@ if question !='':
     st.sidebar.markdown(f'Resultado de tokens en la pregunta:  \n {resu}')
 # Botón para enviar preguntas
 response=None
+
 if button_pdf:
     try:
-        if pdf_text and question.strip():
+        if pdf_text:
             response = chat.send_message(instruction + pdf_text + question)
             conversation_history.append(("Tú", question))
             conversation_history.append(("Bot", response.text))
@@ -106,15 +107,16 @@ elif button_url:
     url_text = extract_text_from_url(url)
     if url_text:
         response = chat.send_message(instruction + url_text + question)
-        conversation_history.append(("You", "URL provided"))
+        conversation_history.append(("You", question))
         conversation_history.append(("Bot", response.text))
     else:
         st.error("No se pudo extraer texto de la URL. Por favor, inténtelo de nuevo con otro enlace.")
 
-if question.strip():
+elif question.strip():
             response = chat.send_message(instruction + question)
             conversation_history.append(("Tú", question))
             conversation_history.append(("Bot", response.text))
+
 
 for sender, message in conversation_history:
 
